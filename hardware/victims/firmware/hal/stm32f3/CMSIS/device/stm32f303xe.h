@@ -9,7 +9,7 @@
   *          This file contains:
   *           - Data structures and the address mapping for all peripherals
   *           - Peripheral's registers declarations and bits definition
-  *           - Macros to access peripheral’s registers hardware
+  *           - Macros to access peripheralï¿½s registers hardware
   *
   ******************************************************************************
   * @attention
@@ -51,7 +51,7 @@
 
 #ifndef __STM32F303xE_H
 #define __STM32F303xE_H
-
+#pragma message "USING STM32F303xE !!!!!!!!!!!!!!!!!"
 #ifdef __cplusplus
  extern "C" {
 #endif /* __cplusplus */

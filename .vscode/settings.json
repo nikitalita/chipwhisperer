@@ -2,5 +2,9 @@
     "restructuredtext.confPath": "${workspaceFolder}\\docs",
     "files.associations": {
         "usart_driver.h": "c"
-    }
+    },
+    "python.analysis.extraPaths": [
+        "./jupyter/courses/faultapp2",
+        "./jupyter/courses/faultapp2"
+    ]
 }

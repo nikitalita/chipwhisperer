@@ -35,6 +35,7 @@ void platform_init(void)
     OSC.CTRL = OSC_XOSCEN_bm;
     
  #if PLATFORM == CW303
+ #pragma message "HALDO!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
     PORTA.DIRSET = PIN5_bm | PIN6_bm;
     PORTA.OUTSET = PIN5_bm | PIN6_bm;
  #endif
