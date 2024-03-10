@@ -253,7 +253,7 @@ class GlitchController:
     def display_stats(self):
         if widgets is None:
             raise ModuleNotFoundError("Could not load ipywidgets, display not available")
-        self.widget_list_groups = [widgets.IntText(value=0, description=group + " count:", disabled=True)
+        self.widget_list_groups = [widgets.IntText(value=self.get_group_counter(group), description=group + " count:", disabled=True)
                                    for group in self.groups]
         
         self.widget_list_parameter = [widgets.FloatSlider(
