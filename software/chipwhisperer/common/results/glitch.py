@@ -489,13 +489,16 @@ class GlitchResults:
         self._result_dict[parameters][group] += 1
         self._result_dict[parameters]['total'] += 1
 
-    def res_dict_of_lists(self, results):
+    def res_dict_of_lists(self, results, orig_key = None):
         rtn = {}
 
         # create a list of values for each parameter
-        orig_key = next(iter(results))
-        for i in range(len(orig_key)):
-            rtn[self.parameters[i]] = [p[i] for p in results]
+        if not orig_key:
+            max_key = len(next(iter(results)))
+            # [0, 1, ... max_key]
+            orig_key = list(range(max_key))
+        for i, key in enumerate(orig_key):
+            rtn[self.parameters[key]] = [p[i] for p in results]
 
         # do the same for each group/group success rate
 
@@ -577,14 +580,16 @@ class GlitchResults:
         if x_index > y_index:
             del(remove_params[x_index])
             del(remove_params[y_index])
+            orig_key = [y_index, x_index]
         else:
             del(remove_params[y_index])
             del(remove_params[x_index])
+            orig_key = [x_index, y_index]
 
         data = self.calc(remove_params)
 
         # get data as {'param0': [list], 'param1': [list], 'group0_rate': n, ...} for easy plotting
-        fmt_data = self.res_dict_of_lists(data)
+        fmt_data = self.res_dict_of_lists(data, orig_key)
 
 
         #We only want legend to show for first element... bit of a hack here
