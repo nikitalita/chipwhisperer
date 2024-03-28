@@ -82,6 +82,7 @@
  * - \ref cortexm3
  */
 
+#define CW_PROG_NUVOICP
 #define CW_PROG_XMEGA
 #define CW_PROG_AVR
 #define CW_TARGET_SPI

@@ -1,6 +1,7 @@
 TARGET = ChipWhisperer-Lite
 
 SRC += main.c naeusb/usb_xmem.c naeusb/fpga_program.c naeusb/V2Protocol.c naeusb/V2ProtocolParams.c  ui.c
+SRC += naeusb/n51_icp.c naeusb/n51_pgm_NAE.c naeusb/NuvoICPNewAE.c
 SRC += naeusb/XMEGANVM.c naeusb/XPROGNewAE.c naeusb/XPROGTarget.c naeusb/ISPProtocol.c naeusb/ISPTarget.c 
 SRC += naeusb/XPROGTimeout.c naeusb/circbuffer.c
 SRC += naeusb/udc.c
