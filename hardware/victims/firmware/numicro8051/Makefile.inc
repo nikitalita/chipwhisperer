@@ -5,26 +5,23 @@
 # PATH
 PLATFORM := CW308_N76E003
 PINCDIR  = $(FIRMWAREPATH)/inc
-OBJDIR  = objdir-$(PLATFORM)
+_OBJDIR = objdir
+OBJDIR  = $(_OBJDIR)-$(PLATFORM)
 LIBDIR  = $(FIRMWAREPATH)/commonlib
 HALDIR = $(FIRMWAREPATH)/hal
 TOOLSDIR = $(FIRMWAREPATH)/tools
 EXTRAINCDIRS += $(HALDIR)
 VPATH += $(LIBDIR):$(HALDIR)
 
-# Platform Specific defines
 # ------------------------------------------------------
+# Platform Specific defines
 ifeq ($(PLATFORM),)
     $(error PLATFORM not defined)
 endif
 
-# These CPUs aren't really stable at other frequencies when using the internal oscillator
-INT_OSC_ALLOWED = 16000000 16600000
 ifeq ($(PLATFORM), CW308_N76E003)
-    ifeq ($(F_CPU),)
-        F_CPU = 16000000
-    endif
     SUPPORTS_24MHZ = 0
+    DEFAULT_CLK = 16000000
     INCDIR = $(PINCDIR)/N76E003
     # PRG Size = 18K Bytes
     CODE_SIZE = 18432
@@ -32,11 +29,9 @@ ifeq ($(PLATFORM), CW308_N76E003)
     IRAM_SIZE = 256
     # EXT-MEM Size = 768 Bytes
     XRAM_SIZE = 768
-else ifeq ($(PLATFORM), CW308_N76S003)
-    ifeq ($(F_CPU),)
-        F_CPU = 16000000
-    endif
+else ifeq ($(PLATFORM), CW308_N76S003_AT20)
     SUPPORTS_24MHZ = 0
+    DEFAULT_CLK = 16000000
     INCDIR = $(PINCDIR)/N76S003
     # PRG Size = 18K Bytes, -128 for SPROM (maybe????)
     # Spec sheet implies it has an SPROM area, but it is not clear if it actually does.
@@ -50,24 +45,19 @@ else ifeq ($(PLATFORM), CW308_N76S003)
     IRAM_SIZE = 256
     # EXT-MEM Size = 1K Bytes
     XRAM_SIZE = 1024
-else ifeq ($(PLATFORM), CW308_MS5116K)
-    ifeq ($(F_CPU),)
-        F_CPU = 24000000
-    endif
+else ifeq ($(PLATFORM), CW308_MS5116K_AT20)
     SUPPORTS_24MHZ = 1
-    INCDIR = $(PINCDIR)/MS5132K
+    DEFAULT_CLK = 24000000
+    INCDIR = $(PINCDIR)/MS5116K
     # PRG Size = 16K Bytes, -128 for the SPROM
     CODE_SIZE = 16256
     # INT-MEM Size = 256 Bytes
     IRAM_SIZE = 256
     # EXT-MEM Size = 1K Bytes
     XRAM_SIZE = 1024
-else ifeq ($(PLATFORM), CW308_MS5132K)
-    ifeq ($(F_CPU),)
-        F_CPU = 24000000
-    endif
+else ifeq ($(PLATFORM), CW308_MS5132K_AT20)
     SUPPORTS_24MHZ = 1
-    CDEFS += -DNUM51_CPU24MHZ_SUPPORTED
+    DEFAULT_CLK = 24000000
     INCDIR = $(PINCDIR)/MS5132K
     # PRG Size = 32K Bytes, -128 for the SPROM
     CODE_SIZE = 32512
@@ -78,27 +68,72 @@ else ifeq ($(PLATFORM), CW308_MS5132K)
 else
     $(error Unsupported PLATFORM: $(PLATFORM))
 endif
-# default: Use the External clock
+
+# ------------------------------------------------------
+# Clock speeds and options
+
+# Use the External clock by default
 ifeq ($(USE_EXTERNAL_CLOCK),)
     USE_EXTERNAL_CLOCK = 1
 endif
+
+ifeq ($(USE_EXTERNAL_CLOCK),1)
+    # Common F_CPU for all platforms
+    ifeq ($(F_CPU),)
+        F_CPU = 7372800
+    endif
+    # EXT_CLK is used by the `delay_xx_us()` functions
+    ifeq ($(EXT_CLK),)
+        _EXT_CLK = $(DEFAULT_CLK)UL
+    else
+        ifneq ($(findstring UL,$(EXT_CLK)),UL)
+            _EXT_CLK = $(addsuffix UL,$(EXT_CLK))
+        endif
+    endif
+    CDEFS += -DEXT_CLK=$(_EXT_CLK)
+else # USE_EXTERNAL_CLOCK = 0
+    ifeq ($(F_CPU),)
+        F_CPU = $(DEFAULT_CLK)UL
+    endif
+endif
+
+ifneq ($(findstring UL,$(F_CPU)),UL)
+    _F_CPU = $(addsuffix UL,$(F_CPU))
+else
+    _F_CPU = $(F_CPU)
+endif
+
+
+F_CPU_INT := $(subst UL,,$(_F_CPU))
+EXT_CLK_INT := $(subst UL,,$(_EXT_CLK))
+$(info FCPU=$(F_CPU))
+
+# These chips aren't stable at other frequencies when using the internal oscillator
+INT_OSC_ALLOWED = 16000000 16600000
 ifeq ($(SUPPORTS_24MHZ),1)
     CDEFS += -DNUM51_CPU24MHZ_SUPPORTED
     INT_OSC_ALLOWED = 16000000 16600000 24000000
 else
-    ifeq ($(shell test $(F_CPU) -gt 16600000; echo $$?),0)
-        $(warning WARNING: F_CPU is set to $(F_CPU), but $(PLATFORM) only supports up to 16.6MHz)
+    ifeq ($(shell test $(F_CPU_INT) -gt 16600000; echo $$?),0)
+        $(warning WARNING: F_CPU is set to $(F_CPU_INT), but $(PLATFORM) only supports up to 16.6MHz)
+    endif
+    ifneq ($(EXT_CLK),)
+        ifeq ($(shell test $(EXT_CLK_INT) -gt 16600000; echo $$?),0)
+            $(warning WARNING: EXT_CLK is set to $(EXT_CLK_INT), but $(PLATFORM) only supports up to 16.6MHz)
+        endif
     endif
 endif
 
-ifeq ($(USE_EXTERNAL_CLOCK),0)
-    ifeq ($(filter $(F_CPU),$(INT_OSC_ALLOWED)),)
-        $(error Invalid F_CPU: $(F_CPU); When using internal clock, allowed values for $(PLATFORM) are: $(INT_OSC_ALLOWED))
+ifneq ($(MAKECMDGOALS),clean)
+    ifeq ($(USE_EXTERNAL_CLOCK),0)
+        ifeq ($(filter $(F_CPU_INT),$(INT_OSC_ALLOWED)),)
+            $(error Invalid F_CPU: $(F_CPU_INT); When using internal clock, allowed values for $(PLATFORM) are: $(INT_OSC_ALLOWED))
+        endif
     endif
 endif
 
 # CDEFS :=
-CDEFS += -DF_CPU=$(F_CPU) -DUSE_EXTERNAL_CLOCK=$(USE_EXTERNAL_CLOCK) -D__SDCC__
+CDEFS += -DF_CPU=$(_F_CPU) -DUSE_EXTERNAL_CLOCK=$(USE_EXTERNAL_CLOCK) -D__SDCC__
 # ------------------------------------------------------
 # Target and Source
 
@@ -119,10 +154,9 @@ ifneq ($(CRYPTO_OPTIONS),NONE)
   endif
 endif
 
-ifeq ($(BAUD_RATE),)
-    BAUD_RATE = 115200
+ifneq ($(BAUD_RATE),)
+    CDEFS += -DBAUD_RATE=$(BAUD_RATE)
 endif
-CDEFS += -DBAUD_RATE=$(BAUD_RATE)
 
 # Not enough memory to run crypto targets with SS_VER_1_1 when XRAM_SIZE <= 768, only SS_VER_2_1
 SMALL_XRAM_SIZES = 128 256 512 768
@@ -159,22 +193,8 @@ CTOASM = $(addprefix $(OUTDIR)/, $(C_TO_ASM_FILE))
 
 # Memory Model (small, medium, large, huge)
 ifeq ($(MODEL),)
-    MODEL  := medium
+    MODEL := medium
 endif
-$(info MODEL=$(MODEL))
-MODEL_VAL =
-ifeq ($(MODEL), small)
-    MODEL_VAL = 0
-else ifeq ($(MODEL), medium)
-    MODEL_VAL = 1
-else ifeq ($(MODEL), large)
-    MODEL_VAL = 2
-else ifeq ($(MODEL), huge)
-    MODEL_VAL = 3
-else
-    $(error Invalid MODEL: $(MODEL))
-endif
-CDEFS += -DMODEL=$(MODEL_VAL)
 
 # USE_FLOATS (this should be combined with model large if set 1)
 # -DUSE_FLOATS=1
@@ -232,10 +252,10 @@ $(OBJDIR)/%.asm.rel: %.asm
 .PHONY: clean
 
 clean:
-	rm -rf $(OBJDIR)/*
-	rm -rf $(TARGET-PLAT).hex
-	rm -rf $(TARGET-PLAT).bin
-	rm -rf $(TARGET-PLAT).asm
+	rm -rf $(_OBJDIR)-*/*
+	rm -rf $(TARGET)-*.hex
+	rm -rf $(TARGET)-*.bin
+	rm -rf $(TARGET)-*.asm
 
 
 asm: $(CTOASM)

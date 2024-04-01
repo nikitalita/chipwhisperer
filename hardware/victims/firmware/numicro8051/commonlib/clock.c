@@ -1,5 +1,6 @@
 #include "numicro_8051.h"
 #include "Common.h"
+#include "pin_defines.h"
 
 void get_hircmap_16mhz_vals(uint8_t *hircmap)
 {
@@ -23,12 +24,20 @@ void get_hircmap_16mhz_vals(uint8_t *hircmap)
 }
 
 void set_hircmap(uint8_t *hircmap){
-  TA = 0XAA;
-  TA = 0X55;
-  RCTRIM0 = hircmap[0];
-  TA = 0XAA;
-  TA = 0X55;
-  RCTRIM1 = hircmap[1];
+    // doing this to ensure that these are near accesses
+    // it screws up the timing of writing to TA-protected registers if we have to get a far pointer
+    uint8_t hircmap0, hircmap1;
+    hircmap0 = hircmap[0];
+    hircmap1 = hircmap[1];
+    BIT_TMP = EA;
+    EA = 0;
+    TA = 0XAA;
+    TA = 0X55;
+    RCTRIM0 = hircmap0;
+    TA = 0XAA;
+    TA = 0X55;
+    RCTRIM1 = hircmap1;
+    EA = BIT_TMP;
 }
 
 #ifdef NUM51_CPU24MHZ_SUPPORTED
@@ -107,13 +116,13 @@ void MODIFY_HIRC_OTHER(void)
 
 void enable_output_clock()
 {
-    P11_PUSHPULL_MODE; // Set P1.1 to push-pull mode
+    PIN_CLK_OUT_PUSHPULL_MODE;
     set_CKCON_CLOEN;         // Enable clock out pin
 }
 
 void disable_output_clock()
 {
-    P11_QUASI_MODE;
+    PIN_CLK_OUT_QUASI_MODE;
     clr_CKCON_CLOEN;
 }
 
@@ -121,11 +130,10 @@ void use_external_clock(void)
 {
     set_CKEN_EXTEN1;
     set_CKEN_EXTEN0;
+    while(!(CKSWT&SET_BIT3));
     clr_CKSWT_OSC1; // step3: switching system clock source if needed
     set_CKSWT_OSC0;
     clr_CKEN_HIRCEN;
-    // TODO: Make sure changing this from set_CT_T0 doesn't break anything
-    ENABLE_TIMER0_MODE0; // Timer0 Clock source = OSCIN (external clock)
 }
 
 void use_internal_clock(void)
@@ -137,7 +145,6 @@ void use_internal_clock(void)
     clr_CKSWT_OSC0;
     while ((CKEN & SET_BIT0) == 1)
         ; // step4: check system clock switching OK or NG
-
     uint8_t hircmap[2];
 #if (F_CPU == 16000000)
     MODIFY_HIRC_16();
