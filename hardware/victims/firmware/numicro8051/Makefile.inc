@@ -33,14 +33,8 @@ else ifeq ($(PLATFORM), CW308_N76S003_AT20)
     SUPPORTS_24MHZ = 0
     DEFAULT_CLK = 16000000
     INCDIR = $(PINCDIR)/N76S003
-    # PRG Size = 18K Bytes, -128 for SPROM (maybe????)
-    # Spec sheet implies it has an SPROM area, but it is not clear if it actually does.
-    # The feature part looks like they sloppily copied it from the MS51 series spec sheet:
-    #  - "128-bytes security protection memory SPROM (only for 32KB/16KB APROM)"
-    # The MS51 has 32KB/16KB APROM options; the N76S003 only has an 18KB option.
-    # It is also missing parts that explain how the SPROM works like the MS51 series spec sheet does.
-    # Setting it anyway so that we don't inadvertantly overwrite the last byte and lock it if it does.
-    CODE_SIZE = 18304
+    # PRG Size = 18K Bytes
+    CODE_SIZE = 18432
     # INT-MEM Size = 256 Bytes
     IRAM_SIZE = 256
     # EXT-MEM Size = 1K Bytes
@@ -49,8 +43,8 @@ else ifeq ($(PLATFORM), CW308_MS5116K_AT20)
     SUPPORTS_24MHZ = 1
     DEFAULT_CLK = 24000000
     INCDIR = $(PINCDIR)/MS5116K
-    # PRG Size = 16K Bytes, -128 for the SPROM
-    CODE_SIZE = 16256
+    # PRG Size = 16K Bytes
+    CODE_SIZE = 16384
     # INT-MEM Size = 256 Bytes
     IRAM_SIZE = 256
     # EXT-MEM Size = 1K Bytes
@@ -59,12 +53,32 @@ else ifeq ($(PLATFORM), CW308_MS5132K_AT20)
     SUPPORTS_24MHZ = 1
     DEFAULT_CLK = 24000000
     INCDIR = $(PINCDIR)/MS5132K
-    # PRG Size = 32K Bytes, -128 for the SPROM
-    CODE_SIZE = 32512
+    # PRG Size = 32K Bytes
+    CODE_SIZE = 32768
     # INT-MEM Size = 256 Bytes
     IRAM_SIZE = 256
     # EXT-MEM Size = 2K Bytes
     XRAM_SIZE = 2048
+else ifeq ($(PLATFORM), CW308_MG5116K_AT20)
+    SUPPORTS_24MHZ = 1
+    DEFAULT_CLK = 24000000
+    INCDIR = $(PINCDIR)/MG51
+    # PRG Size = 16K Bytes
+    CODE_SIZE = 16384
+    # INT-MEM Size = 256 Bytes
+    IRAM_SIZE = 256
+    # EXT-MEM Size = 1K Bytes
+    XRAM_SIZE = 1024
+else ifeq ($(PLATFORM), CW308_MG5132K_AT20)
+    SUPPORTS_24MHZ = 1
+    DEFAULT_CLK = 24000000
+    INCDIR = $(PINCDIR)/MG51
+    # PRG Size = 32K Bytes
+    CODE_SIZE = 32768
+    # INT-MEM Size = 256 Bytes
+    IRAM_SIZE = 256
+    # EXT-MEM Size = 1K Bytes
+    XRAM_SIZE = 1024
 else
     $(error Unsupported PLATFORM: $(PLATFORM))
 endif
